@@ -1,0 +1,154 @@
+<div class="dashboard">
+  <div class="page-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p>Welcome back, <strong>{{ user()?.name }}</strong> — here's what's happening today.</p>
+    </div>
+    <div class="header-actions">
+      <div class="date-badge">
+        <span class="material-icons">calendar_today</span>
+        {{ today | date:'EEEE, MMMM d, y' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stats-grid">
+    <div class="stat-card purple">
+      <div class="stat-icon"><span class="material-icons">trending_up</span></div>
+      <div class="stat-content">
+        <p class="stat-label">Total Leads</p>
+        <h2 class="stat-value">{{ stats.totalLeads || 0 }}</h2>
+        <p class="stat-sub">{{ stats.closedWonLeads || 0 }} closed won</p>
+      </div>
+    </div>
+    <div class="stat-card cyan">
+      <div class="stat-icon"><span class="material-icons">confirmation_number</span></div>
+      <div class="stat-content">
+        <p class="stat-label">Open Tickets</p>
+        <h2 class="stat-value">{{ stats.openTickets || 0 }}</h2>
+        <p class="stat-sub">{{ stats.resolvedTickets || 0 }} resolved</p>
+      </div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon"><span class="material-icons">percent</span></div>
+      <div class="stat-content">
+        <p class="stat-label">Conversion Rate</p>
+        <h2 class="stat-value">{{ stats.conversionRate || 0 }}%</h2>
+        <p class="stat-sub">Leads to closed won</p>
+      </div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-icon"><span class="material-icons">payments</span></div>
+      <div class="stat-content">
+        <p class="stat-label">Total Deal Value</p>
+        <h2 class="stat-value">{{ formatCurrency(stats.totalDealValue || 0) }}</h2>
+        <p class="stat-sub">Closed won deals</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="charts-row">
+    <div class="chart-card wide">
+      <div class="chart-header">
+        <div>
+          <h3>Leads by Month</h3>
+          <p>New leads acquired per month this year</p>
+        </div>
+        <span class="chart-badge">{{ today | date:'yyyy' }}</span>
+      </div>
+      <div class="chart-container">
+        @if (barChartData.labels?.length) {
+          <canvas baseChart [data]="barChartData" [options]="barChartOptions" type="bar"></canvas>
+        } @else {
+          <div class="chart-empty"><span class="material-icons">bar_chart</span><p>Loading chart...</p></div>
+        }
+      </div>
+    </div>
+
+    <div class="chart-card narrow">
+      <div class="chart-header">
+        <div>
+          <h3>Ticket Status</h3>
+          <p>Distribution by status</p>
+        </div>
+      </div>
+      <div class="chart-container">
+        @if (doughnutData.labels?.length) {
+          <canvas baseChart [data]="doughnutData" [options]="doughnutOptions" type="doughnut"></canvas>
+        } @else {
+          <div class="chart-empty"><span class="material-icons">donut_large</span><p>Loading...</p></div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Row -->
+  <div class="bottom-row">
+    <!-- Recent Leads -->
+    <div class="activity-card">
+      <div class="activity-header">
+        <h3><span class="material-icons">trending_up</span> Recent Leads</h3>
+        <a routerLink="/leads" class="see-all">See all <span class="material-icons">arrow_forward</span></a>
+      </div>
+      <div class="activity-list">
+        @for (lead of recentLeads; track lead._id) {
+          <div class="activity-item">
+            <div class="activity-avatar lead-avatar">{{ lead.companyName?.[0] }}</div>
+            <div class="activity-info">
+              <p class="activity-title">{{ lead.companyName }}</p>
+              <p class="activity-sub">{{ lead.contactPerson }}</p>
+            </div>
+            <span class="stage-badge stage-{{ lead.stage | lowercase | replace:' ':'-' }}">{{ lead.stage }}</span>
+          </div>
+        }
+        @if (!recentLeads.length && !loading) {
+          <p class="empty-state">No recent leads</p>
+        }
+      </div>
+    </div>
+
+    <!-- Recent Tickets -->
+    <div class="activity-card">
+      <div class="activity-header">
+        <h3><span class="material-icons">confirmation_number</span> Recent Tickets</h3>
+        <a routerLink="/tickets" class="see-all">See all <span class="material-icons">arrow_forward</span></a>
+      </div>
+      <div class="activity-list">
+        @for (ticket of recentTickets; track ticket._id) {
+          <div class="activity-item">
+            <div class="activity-avatar ticket-avatar">
+              <span class="material-icons">receipt_long</span>
+            </div>
+            <div class="activity-info">
+              <p class="activity-title">{{ ticket.subject }}</p>
+              <p class="activity-sub">{{ ticket.ticketNumber }}</p>
+            </div>
+            <span class="priority-badge priority-{{ ticket.priority | lowercase }}">{{ ticket.priority }}</span>
+          </div>
+        }
+        @if (!recentTickets.length && !loading) {
+          <p class="empty-state">No recent tickets</p>
+        }
+      </div>
+    </div>
+
+    <!-- Stage Distribution -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <h3>Pipeline Stages</h3>
+          <p>Leads by stage</p>
+        </div>
+      </div>
+      <div class="chart-container sm">
+        @if (stageData.labels?.length) {
+          <canvas baseChart [data]="stageData" [options]="doughnutOptions" type="doughnut"></canvas>
+        } @else {
+          <div class="chart-empty"><span class="material-icons">donut_large</span></div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

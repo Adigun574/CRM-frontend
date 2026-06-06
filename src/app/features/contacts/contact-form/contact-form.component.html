@@ -1,0 +1,152 @@
+<div class="modal-overlay" (click)="cancelled.emit()">
+  <div class="modal modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h2>{{ contact ? 'Edit Contact' : 'New Contact' }}</h2>
+        <p>{{ contact ? 'Update contact information' : 'Add a new contact to your database' }}</p>
+      </div>
+      <button class="close-btn" (click)="cancelled.emit()"><span class="material-icons">close</span></button>
+    </div>
+
+    @if (error) {
+      <div class="form-error"><span class="material-icons">error</span> {{ error }}</div>
+    }
+
+    <div class="modal-body">
+      <!-- Basic Info -->
+      <p class="section-label">Basic Information</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>First Name *</label>
+          <input type="text" [(ngModel)]="form.firstName" placeholder="First name">
+        </div>
+        <div class="form-group">
+          <label>Last Name *</label>
+          <input type="text" [(ngModel)]="form.lastName" placeholder="Last name">
+        </div>
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input type="email" [(ngModel)]="form.email" placeholder="email@company.com">
+        </div>
+        <div class="form-group">
+          <label>Job Title</label>
+          <input type="text" [(ngModel)]="form.jobTitle" placeholder="e.g. CEO">
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" [(ngModel)]="form.department" placeholder="e.g. Sales">
+        </div>
+        <div class="form-group">
+          <label>Source</label>
+          <select [(ngModel)]="form.source">
+            @for (s of sources; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select [(ngModel)]="form.status">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Account (Company)</label>
+          <select [(ngModel)]="form.account" (ngModelChange)="onAccountChange($event)">
+            <option value="">No Account</option>
+            @for (a of accounts; track a._id) { <option [value]="a._id">{{ a.name }}</option> }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Reports To</label>
+          <select [(ngModel)]="form.reportsTo">
+            <option value="">None</option>
+            @for (c of contacts; track c._id) {
+              <option [value]="c._id">{{ c.firstName }} {{ c.lastName }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Assigned To</label>
+          <select [(ngModel)]="form.assignedTo">
+            <option value="">Unassigned</option>
+            @for (a of agents; track a._id) { <option [value]="a._id">{{ a.name }} ({{ a.role }})</option> }
+          </select>
+        </div>
+      </div>
+
+      <!-- Phone Numbers -->
+      <p class="section-label">Phone Numbers</p>
+      @for (phone of form.phones; track $index) {
+        <div class="phone-row">
+          <select [(ngModel)]="phone.label" class="phone-label-select">
+            <option value="Mobile">Mobile</option>
+            <option value="Work">Work</option>
+            <option value="Home">Home</option>
+            <option value="Other">Other</option>
+          </select>
+          <input type="tel" [(ngModel)]="phone.number" placeholder="080XXXXXXXX">
+          @if ((form.phones?.length || 0) > 1) {
+            <button class="icon-btn delete sm" (click)="removePhone($index)">
+              <span class="material-icons">remove_circle</span>
+            </button>
+          }
+        </div>
+      }
+      <button class="btn-ghost sm" (click)="addPhone()">
+        <span class="material-icons">add</span> Add Phone
+      </button>
+
+      <!-- Social Links -->
+      <p class="section-label">Social Links</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label><span class="material-icons social-icon">link</span> LinkedIn</label>
+          <input type="url" [(ngModel)]="form.social!.linkedin" placeholder="https://linkedin.com/in/...">
+        </div>
+        <div class="form-group">
+          <label><span class="material-icons social-icon">link</span> Twitter / X</label>
+          <input type="url" [(ngModel)]="form.social!.twitter" placeholder="https://twitter.com/...">
+        </div>
+        <div class="form-group">
+          <label><span class="material-icons social-icon">link</span> Facebook</label>
+          <input type="url" [(ngModel)]="form.social!.facebook" placeholder="https://facebook.com/...">
+        </div>
+        <div class="form-group">
+          <label><span class="material-icons social-icon">link</span> Instagram</label>
+          <input type="url" [(ngModel)]="form.social!.instagram" placeholder="https://instagram.com/...">
+        </div>
+      </div>
+
+      <!-- Address -->
+      <p class="section-label">Address</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>City</label>
+          <input type="text" [(ngModel)]="form.address!.city" placeholder="City">
+        </div>
+        <div class="form-group">
+          <label>State</label>
+          <input type="text" [(ngModel)]="form.address!.state" placeholder="State">
+        </div>
+        <div class="form-group">
+          <label>Country</label>
+          <input type="text" [(ngModel)]="form.address!.country" placeholder="Country">
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea [(ngModel)]="form.notes" rows="3" placeholder="Additional notes about this contact..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="cancelled.emit()">Cancel</button>
+      <button class="btn-save" (click)="save()" [disabled]="loading">
+        @if (loading) { <span class="spinner-sm"></span> Saving... }
+        @else { <span class="material-icons">save</span> {{ contact ? 'Update Contact' : 'Create Contact' }} }
+      </button>
+    </div>
+  </div>
+</div>

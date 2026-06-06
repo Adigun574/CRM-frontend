@@ -1,0 +1,99 @@
+<div class="accounts-page">
+  <div class="page-header">
+    <div>
+      <h1>Accounts</h1>
+      <p>{{ total }} company accounts</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">
+      <span class="material-icons">business</span> New Account
+    </button>
+  </div>
+
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="material-icons">search</span>
+      <input type="text" [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" placeholder="Search accounts by name, email, industry...">
+      @if (searchQuery) {
+        <button class="clear-search" (click)="searchQuery = ''; loadAccounts()">
+          <span class="material-icons">close</span>
+        </button>
+      }
+    </div>
+    <select [(ngModel)]="typeFilter" (change)="loadAccounts()">
+      <option value="">All Types</option>
+      @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+    </select>
+    <select [(ngModel)]="industryFilter" (change)="loadAccounts()">
+      <option value="">All Industries</option>
+      @for (i of industries; track i) { <option [value]="i">{{ i }}</option> }
+    </select>
+    @if (typeFilter || industryFilter || searchQuery) {
+      <button class="btn-ghost" (click)="clearFilters()">
+        <span class="material-icons">filter_alt_off</span> Clear
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state"><div class="spinner-lg"></div><p>Loading accounts...</p></div>
+  }
+
+  @if (!loading()) {
+    <div class="accounts-grid">
+      @for (account of accounts; track account._id) {
+        <div class="account-card">
+          <div class="account-card-header">
+            <div class="account-avatar">{{ account.name[0] }}</div>
+            <div class="account-badge-row">
+              <span class="badge type-{{ account.type | lowercase }}">{{ account.type }}</span>
+            </div>
+          </div>
+          <div class="account-card-body">
+            <h3 class="account-name">{{ account.name }}</h3>
+            <p class="account-industry">{{ account.industry }}</p>
+            @if (account.website) {
+              <a [href]="account.website" target="_blank" class="account-website">
+                <span class="material-icons">language</span> {{ account.website | slice:8:40 }}
+              </a>
+            }
+            <div class="account-stats">
+              @if (account.employees) {
+                <div class="stat-chip">
+                  <span class="material-icons">group</span> {{ account.employees | number }} employees
+                </div>
+              }
+              @if (account.annualRevenue) {
+                <div class="stat-chip">
+                  <span class="material-icons">payments</span> {{ formatRevenue(account.annualRevenue) }}
+                </div>
+              }
+            </div>
+          </div>
+          <div class="account-card-footer">
+            <span class="assigned-chip">{{ account.assignedToName || 'Unassigned' }}</span>
+            <div class="action-btns">
+              <button class="icon-btn edit" (click)="openEdit(account)" title="Edit">
+                <span class="material-icons">edit</span>
+              </button>
+              @if (isAdmin()) {
+                <button class="icon-btn delete" (click)="deleteAccount(account)" title="Delete">
+                  <span class="material-icons">delete</span>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+      @if (!accounts.length) {
+        <div class="empty-state">
+          <span class="material-icons">business_center</span>
+          <p>No accounts found. Create your first account!</p>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (showForm()) {
+  <app-account-form [account]="editingAccount" (saved)="onFormSaved()" (cancelled)="closeForm()" />
+}

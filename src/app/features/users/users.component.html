@@ -1,0 +1,112 @@
+<div class="users-page">
+  <div class="page-header">
+    <div>
+      <h1>User Management</h1>
+      <p>{{ users.length }} registered users</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">
+      <span class="material-icons">person_add</span> Add User
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state"><div class="spinner-lg"></div><p>Loading users...</p></div>
+  }
+
+  @if (!loading()) {
+    <div class="users-grid">
+      @for (user of users; track user._id) {
+        <div class="user-card" [class.inactive]="!user.isActive">
+          <div class="user-card-top">
+            <div class="user-avatar-lg">{{ user.name?.[0] }}</div>
+            <div class="user-status" [class.active]="user.isActive"></div>
+          </div>
+          <div class="user-card-body">
+            <h3>{{ user.name }}</h3>
+            <p class="user-email">{{ user.email }}</p>
+            <span class="role-badge role-{{ user.role }}">{{ user.role }}</span>
+          </div>
+          <div class="user-card-meta">
+            <p>Joined {{ user.createdAt | date:'MMM d, y' }}</p>
+            @if (user.lastLogin) { <p>Last login {{ user.lastLogin | date:'MMM d' }}</p> }
+          </div>
+          <div class="user-card-actions">
+            <button class="btn-action edit" (click)="openEdit(user)">
+              <span class="material-icons">edit</span> Edit
+            </button>
+            <button class="btn-action toggle" (click)="toggleActive(user)">
+              <span class="material-icons">{{ user.isActive ? 'block' : 'check_circle' }}</span>
+              {{ user.isActive ? 'Disable' : 'Enable' }}
+            </button>
+            <button class="btn-action del" (click)="deleteUser(user)">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </div>
+      }
+      @if (!users.length) {
+        <div class="empty-state">
+          <span class="material-icons">people</span>
+          <p>No users yet. Add your team!</p>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- User Form Modal -->
+@if (showForm()) {
+  <div class="modal-overlay" (click)="showForm.set(false)">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>{{ editingUser ? 'Edit User' : 'Add New User' }}</h2>
+          <p>{{ editingUser ? 'Update user details and role' : 'Create a new team member account' }}</p>
+        </div>
+        <button class="close-btn" (click)="showForm.set(false)"><span class="material-icons">close</span></button>
+      </div>
+      @if (formError) {
+        <div class="form-error"><span class="material-icons">error</span> {{ formError }}</div>
+      }
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label>Full Name *</label>
+            <input type="text" [(ngModel)]="form.name" placeholder="e.g. Chidi Okonkwo">
+          </div>
+          <div class="form-group full-width">
+            <label>Email Address *</label>
+            <input type="email" [(ngModel)]="form.email" placeholder="user@company.com">
+          </div>
+          <div class="form-group">
+            <label>Password {{ editingUser ? '(leave blank to keep current)' : '*' }}</label>
+            <input type="password" [(ngModel)]="form.password" placeholder="Min. 6 characters">
+          </div>
+          <div class="form-group">
+            <label>Role *</label>
+            <select [(ngModel)]="form.role">
+              <option value="admin">Admin</option>
+              <option value="sales">Sales Rep</option>
+              <option value="support">Support Agent</option>
+            </select>
+          </div>
+          @if (editingUser) {
+            <div class="form-group full-width">
+              <label class="toggle-label">
+                <span>Account Active</span>
+                <input type="checkbox" [(ngModel)]="form.isActive">
+              </label>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showForm.set(false)">Cancel</button>
+        <button class="btn-save" (click)="save()" [disabled]="formLoading">
+          @if (formLoading) { <span class="spinner-sm"></span> Saving... }
+          @else { <span class="material-icons">{{ editingUser ? 'save' : 'person_add' }}</span> {{ editingUser ? 'Update User' : 'Create User' }} }
+        </button>
+      </div>
+    </div>
+  </div>
+}

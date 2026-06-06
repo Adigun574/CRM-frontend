@@ -1,0 +1,114 @@
+<div class="contacts-page">
+  <div class="page-header">
+    <div>
+      <h1>Contacts</h1>
+      <p>{{ total }} contacts in your database</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">
+      <span class="material-icons">person_add</span> New Contact
+    </button>
+  </div>
+
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="material-icons">search</span>
+      <input type="text" [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" placeholder="Search by name, email, company...">
+      @if (searchQuery) {
+        <button class="clear-search" (click)="searchQuery = ''; loadContacts()">
+          <span class="material-icons">close</span>
+        </button>
+      }
+    </div>
+    <select [(ngModel)]="statusFilter" (change)="loadContacts()">
+      <option value="">All Statuses</option>
+      <option value="Active">Active</option>
+      <option value="Inactive">Inactive</option>
+    </select>
+    <select [(ngModel)]="sourceFilter" (change)="loadContacts()">
+      <option value="">All Sources</option>
+      @for (s of sources; track s) {
+        <option [value]="s">{{ s }}</option>
+      }
+    </select>
+    @if (statusFilter || sourceFilter || searchQuery) {
+      <button class="btn-ghost" (click)="clearFilters()">
+        <span class="material-icons">filter_alt_off</span> Clear
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state"><div class="spinner-lg"></div><p>Loading contacts...</p></div>
+  }
+
+  @if (!loading()) {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Contact</th>
+            <th>Company</th>
+            <th>Job Title</th>
+            <th>Phone</th>
+            <th>Source</th>
+            <th>Status</th>
+            <th>Assigned To</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (contact of contacts; track contact._id) {
+            <tr>
+              <td>
+                <div class="contact-cell">
+                  <div class="contact-avatar">{{ contact.firstName[0] }}{{ contact.lastName[0] }}</div>
+                  <div>
+                    <a [routerLink]="['/contacts', contact._id]" class="contact-name-link">{{ fullName(contact) }}</a>
+                    <p class="contact-email">{{ contact.email }}</p>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <p class="company-name">{{ contact.accountName || '—' }}</p>
+              </td>
+              <td>
+                <p>{{ contact.jobTitle || '—' }}</p>
+                <p class="sub-text">{{ contact.department }}</p>
+              </td>
+              <td>{{ primaryPhone(contact) }}</td>
+              <td><span class="badge source-badge">{{ contact.source }}</span></td>
+              <td>
+                <span class="badge status-{{ contact.status | lowercase }}">{{ contact.status }}</span>
+              </td>
+              <td>
+                <div class="agent-chip">{{ contact.assignedToName || '—' }}</div>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <a [routerLink]="['/contacts', contact._id]" class="icon-btn view" title="View">
+                    <span class="material-icons">visibility</span>
+                  </a>
+                  <button class="icon-btn edit" (click)="openEdit(contact)" title="Edit">
+                    <span class="material-icons">edit</span>
+                  </button>
+                  @if (isAdmin()) {
+                    <button class="icon-btn delete" (click)="deleteContact(contact)" title="Delete">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+          @if (!contacts.length) {
+            <tr><td colspan="8" class="empty-row">No contacts found. Add your first contact!</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (showForm()) {
+  <app-contact-form [contact]="editingContact" (saved)="onFormSaved()" (cancelled)="closeForm()" />
+}

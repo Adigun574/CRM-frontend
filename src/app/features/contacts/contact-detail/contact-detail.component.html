@@ -1,0 +1,158 @@
+<div class="detail-page">
+  @if (loading()) {
+    <div class="loading-state"><div class="spinner-lg"></div><p>Loading contact...</p></div>
+  }
+
+  @if (!loading() && contact) {
+    <!-- Header -->
+    <div class="detail-header">
+      <a routerLink="/contacts" class="back-link">
+        <span class="material-icons">arrow_back</span> Contacts
+      </a>
+      <div class="header-main">
+        <div class="contact-hero">
+          <div class="hero-avatar">{{ contact.firstName[0] }}{{ contact.lastName[0] }}</div>
+          <div>
+            <h1>{{ fullName(contact) }}</h1>
+            <p class="hero-sub">{{ contact.jobTitle }}{{ contact.department ? ' · ' + contact.department : '' }}</p>
+            <p class="hero-company">{{ contact.accountName || 'No Company' }}</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <span class="badge status-{{ contact.status | lowercase }}">{{ contact.status }}</span>
+          <button class="btn-primary" (click)="showEditForm.set(true)">
+            <span class="material-icons">edit</span> Edit
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-body">
+      <!-- Left column -->
+      <div class="detail-col">
+
+        <!-- Contact Info -->
+        <div class="detail-card">
+          <h3 class="card-title"><span class="material-icons">person</span> Contact Information</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Email</span>
+              <a [href]="'mailto:' + contact.email" class="info-value link">{{ contact.email }}</a>
+            </div>
+            @for (phone of contact.phones; track $index) {
+              <div class="info-item">
+                <span class="info-label">{{ phone.label }}</span>
+                <a [href]="'tel:' + phone.number" class="info-value link">{{ phone.number }}</a>
+              </div>
+            }
+            <div class="info-item">
+              <span class="info-label">Source</span>
+              <span class="info-value">{{ contact.source }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Assigned To</span>
+              <span class="info-value">{{ contact.assignedToName || '—' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Reports To</span>
+              <span class="info-value">{{ contact.reportsToName || '—' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Created</span>
+              <span class="info-value">{{ contact.createdAt | date:'MMM d, y' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Social Links -->
+        @if (socialLinks(contact).length) {
+          <div class="detail-card">
+            <h3 class="card-title"><span class="material-icons">share</span> Social Links</h3>
+            <div class="social-list">
+              @for (entry of socialLinks(contact); track entry[0]) {
+                <a [href]="entry[1]" target="_blank" class="social-link">
+                  <span class="material-icons">open_in_new</span>
+                  <span class="social-platform">{{ entry[0] | titlecase }}</span>
+                </a>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Address -->
+        @if (contact.address?.city || contact.address?.state) {
+          <div class="detail-card">
+            <h3 class="card-title"><span class="material-icons">location_on</span> Address</h3>
+            <p class="address-text">
+              {{ contact.address.city }}{{ contact.address.city && contact.address.state ? ', ' : '' }}{{ contact.address.state }}{{ contact.address.country ? ', ' + contact.address.country : '' }}
+            </p>
+          </div>
+        }
+
+        <!-- Notes -->
+        @if (contact.notes) {
+          <div class="detail-card">
+            <h3 class="card-title"><span class="material-icons">notes</span> Notes</h3>
+            <p class="notes-text">{{ contact.notes }}</p>
+          </div>
+        }
+      </div>
+
+      <!-- Right column: Interaction History -->
+      <div class="detail-col">
+        <div class="detail-card interactions-card">
+          <div class="interactions-header">
+            <h3 class="card-title"><span class="material-icons">history</span> Interaction History</h3>
+            <button class="btn-primary sm" (click)="showInteractionForm = !showInteractionForm">
+              <span class="material-icons">add</span> Log
+            </button>
+          </div>
+
+          @if (showInteractionForm) {
+            <div class="interaction-form">
+              <select [(ngModel)]="interactionForm.type">
+                @for (t of interactionTypes; track t) { <option [value]="t">{{ t }}</option> }
+              </select>
+              <textarea [(ngModel)]="interactionForm.summary" rows="3" placeholder="Describe the interaction..."></textarea>
+              <div class="form-actions">
+                <button class="btn-cancel" (click)="showInteractionForm = false">Cancel</button>
+                <button class="btn-save" (click)="addInteraction()" [disabled]="savingInteraction">
+                  @if (savingInteraction) { <span class="spinner-sm"></span> }
+                  @else { Save }
+                </button>
+              </div>
+            </div>
+          }
+
+          <div class="timeline">
+            @for (item of (contact.interactions | slice: 0 : 50); track $index) {
+              <div class="timeline-item">
+                <div class="timeline-icon type-{{ item.type | lowercase }}">
+                  <span class="material-icons">{{ interactionIcon(item.type) }}</span>
+                </div>
+                <div class="timeline-content">
+                  <div class="timeline-top">
+                    <span class="timeline-type">{{ item.type }}</span>
+                    <span class="timeline-date">{{ item.createdAt | date:'MMM d, y · h:mm a' }}</span>
+                  </div>
+                  <p class="timeline-summary">{{ item.summary }}</p>
+                  <p class="timeline-by">by {{ item.performedByName }}</p>
+                </div>
+              </div>
+            }
+            @if (!contact.interactions?.length) {
+              <div class="empty-timeline">
+                <span class="material-icons">history_toggle_off</span>
+                <p>No interactions logged yet.</p>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+@if (showEditForm() && contact) {
+  <app-contact-form [contact]="contact" (saved)="onFormSaved()" (cancelled)="showEditForm.set(false)" />
+}

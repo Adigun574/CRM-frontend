@@ -1,0 +1,182 @@
+<div class="tickets-page">
+  <div class="page-header">
+    <div>
+      <h1>Support Tickets</h1>
+      <p>{{ total }} total tickets</p>
+    </div>
+    <button class="btn-primary" (click)="showCreateForm.set(true)">
+      <span class="material-icons">add</span> New Ticket
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="material-icons">search</span>
+      <input type="text" [(ngModel)]="searchQuery" (keyup.enter)="loadTickets()" placeholder="Search tickets...">
+      @if (searchQuery) {
+        <button class="clear-search" (click)="searchQuery = ''; loadTickets()"><span class="material-icons">close</span></button>
+      }
+    </div>
+    <select [(ngModel)]="statusFilter" (change)="loadTickets()">
+      <option value="">All Statuses</option>
+      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
+    <select [(ngModel)]="priorityFilter" (change)="loadTickets()">
+      <option value="">All Priorities</option>
+      <option value="Low">Low</option>
+      <option value="Medium">Medium</option>
+      <option value="High">High</option>
+      <option value="Critical">Critical</option>
+    </select>
+    <select [(ngModel)]="categoryFilter" (change)="loadTickets()">
+      <option value="">All Categories</option>
+      @for (c of categories; track c) { <option [value]="c">{{ c }}</option> }
+    </select>
+    @if (statusFilter || priorityFilter || categoryFilter || searchQuery) {
+      <button class="btn-ghost" (click)="clearFilters()">
+        <span class="material-icons">filter_alt_off</span> Clear
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state"><div class="spinner-lg"></div><p>Loading tickets...</p></div>
+  }
+
+  @if (!loading()) {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ticket #</th>
+            <th>Subject</th>
+            <th>Customer</th>
+            <th>Category</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Assigned To</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (ticket of tickets; track ticket._id) {
+            <tr [class.resolved-row]="ticket.status === 'Resolved' || ticket.status === 'Closed'">
+              <td>
+                <a [routerLink]="['/tickets', ticket._id]" class="ticket-number">
+                  {{ ticket.ticketNumber }}
+                </a>
+              </td>
+              <td>
+                <a [routerLink]="['/tickets', ticket._id]" class="ticket-subject">{{ ticket.subject }}</a>
+              </td>
+              <td>
+                <p class="customer-name">{{ ticket.customer.name }}</p>
+                <p class="customer-email">{{ ticket.customer.email }}</p>
+              </td>
+              <td><span class="category-badge">{{ ticket.category }}</span></td>
+              <td><span class="badge priority-{{ ticket.priority | lowercase }}">{{ ticket.priority }}</span></td>
+              <td><span class="status-badge status-{{ ticket.status | lowercase | replace:' ':'-' }}">{{ ticket.status }}</span></td>
+              <td>
+                <div class="agent-chip">{{ ticket.assignedToName || '—' }}</div>
+              </td>
+              <td class="date-cell">{{ ticket.createdAt | date:'MMM d, y' }}</td>
+              <td>
+                <div class="action-btns">
+                  <a [routerLink]="['/tickets', ticket._id]" class="icon-btn view" title="View">
+                    <span class="material-icons">visibility</span>
+                  </a>
+                  @if (ticket.status !== 'Resolved' && ticket.status !== 'Closed') {
+                    <button class="icon-btn resolve" (click)="resolveTicket(ticket)" title="Resolve">
+                      <span class="material-icons">check_circle</span>
+                    </button>
+                  }
+                  @if (isAdmin()) {
+                    <button class="icon-btn delete" (click)="deleteTicket(ticket)" title="Delete">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+          @if (!tickets.length) {
+            <tr><td colspan="9" class="empty-row">No tickets found.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<!-- Create Ticket Modal -->
+@if (showCreateForm()) {
+  <div class="modal-overlay" (click)="showCreateForm.set(false)">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2>New Support Ticket</h2>
+          <p>Submit a new customer support request</p>
+        </div>
+        <button class="close-btn" (click)="showCreateForm.set(false)"><span class="material-icons">close</span></button>
+      </div>
+      @if (createError) {
+        <div class="form-error"><span class="material-icons">error</span> {{ createError }}</div>
+      }
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Customer Name *</label>
+            <input type="text" [(ngModel)]="newTicket.customer.name" placeholder="Full name">
+          </div>
+          <div class="form-group">
+            <label>Customer Email *</label>
+            <input type="email" [(ngModel)]="newTicket.customer.email" placeholder="customer@email.com">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" [(ngModel)]="newTicket.customer.phone" placeholder="080XXXXXXXX">
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select [(ngModel)]="newTicket.category">
+              @for (c of categories; track c) { <option [value]="c">{{ c }}</option> }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select [(ngModel)]="newTicket.priority">
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Assigned To</label>
+            <select [(ngModel)]="newTicket.assignedTo">
+              <option value="">Unassigned</option>
+              @for (a of agents; track a._id) { <option [value]="a._id">{{ a.name }}</option> }
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label>Subject *</label>
+            <input type="text" [(ngModel)]="newTicket.subject" placeholder="Brief summary of the issue">
+          </div>
+          <div class="form-group full-width">
+            <label>Description *</label>
+            <textarea [(ngModel)]="newTicket.description" rows="4" placeholder="Detailed description of the issue..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showCreateForm.set(false)">Cancel</button>
+        <button class="btn-save" (click)="createTicket()" [disabled]="createLoading">
+          @if (createLoading) { <span class="spinner-sm"></span> Creating... }
+          @else { <span class="material-icons">confirmation_number</span> Create Ticket }
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,168 @@
+<div class="leads-page">
+  <div class="page-header">
+    <div>
+      <h1>Lead Management</h1>
+      <p>{{ total }} leads in pipeline</p>
+    </div>
+    <div class="header-actions">
+      <div class="view-toggle">
+        <button [class.active]="viewMode === 'table'" (click)="viewMode = 'table'" title="Table View">
+          <span class="material-icons">table_rows</span>
+        </button>
+        <button [class.active]="viewMode === 'kanban'" (click)="viewMode = 'kanban'" title="Kanban View">
+          <span class="material-icons">view_kanban</span>
+        </button>
+      </div>
+      <button class="btn-primary" (click)="openCreate()">
+        <span class="material-icons">add</span> New Lead
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <span class="material-icons">search</span>
+      <input type="text" [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" placeholder="Search leads by company, name, email...">
+      @if (searchQuery) {
+        <button class="clear-search" (click)="searchQuery = ''; loadLeads()">
+          <span class="material-icons">close</span>
+        </button>
+      }
+    </div>
+    <select [(ngModel)]="stageFilter" (change)="loadLeads()">
+      <option value="">All Stages</option>
+      @for (s of stages; track s) {
+        <option [value]="s">{{ s }}</option>
+      }
+    </select>
+    <select [(ngModel)]="priorityFilter" (change)="loadLeads()">
+      <option value="">All Priorities</option>
+      <option value="Low">Low</option>
+      <option value="Medium">Medium</option>
+      <option value="High">High</option>
+    </select>
+    @if (stageFilter || priorityFilter || searchQuery) {
+      <button class="btn-ghost" (click)="clearFilters()">
+        <span class="material-icons">filter_alt_off</span> Clear
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state"><div class="spinner-lg"></div><p>Loading leads...</p></div>
+  }
+
+  <!-- TABLE VIEW -->
+  @if (!loading() && viewMode === 'table') {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Contact</th>
+            <th>Stage</th>
+            <th>Priority</th>
+            <th>Deal Value</th>
+            <th>Assigned To</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (lead of leads; track lead._id) {
+            <tr>
+              <td>
+                <div class="company-cell">
+                  <div class="company-avatar">{{ lead.companyName?.[0] }}</div>
+                  <div>
+                    <p class="company-name">{{ lead.companyName }}</p>
+                    <p class="company-industry">{{ lead.industry }}</p>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <p class="contact-name">{{ lead.contactPerson }}</p>
+                <p class="contact-email">{{ lead.email }}</p>
+              </td>
+              <td>
+                <select class="stage-select {{ stageColors[lead.stage] }}" [ngModel]="lead.stage" (ngModelChange)="updateStage(lead, $event)">
+                  @for (s of stages; track s) {
+                    <option [value]="s">{{ s }}</option>
+                  }
+                </select>
+              </td>
+              <td><span class="badge priority-{{ lead.priority | lowercase }}">{{ lead.priority }}</span></td>
+              <td class="deal-value">{{ formatCurrency(lead.dealValue) }}</td>
+              <td>
+                <div class="agent-chip">{{ lead.assignedToName || '—' }}</div>
+              </td>
+              <td class="date-cell">{{ lead.createdAt | date:'MMM d, y' }}</td>
+              <td>
+                <div class="action-btns">
+                  <button class="icon-btn edit" (click)="openEdit(lead)" title="Edit">
+                    <span class="material-icons">edit</span>
+                  </button>
+                  @if (isAdmin()) {
+                    <button class="icon-btn delete" (click)="deleteLead(lead)" title="Delete">
+                      <span class="material-icons">delete</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+          @if (!leads.length) {
+            <tr><td colspan="8" class="empty-row">No leads found. Create your first lead!</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- KANBAN VIEW -->
+  @if (!loading() && viewMode === 'kanban') {
+    <div class="kanban-board">
+      @for (stage of stages; track stage) {
+        <div class="kanban-column">
+          <div class="column-header">
+            <div>
+              <span class="column-title">{{ stage }}</span>
+              <span class="column-count">{{ getLeadsByStage(stage).length }}</span>
+            </div>
+          </div>
+          <div class="kanban-cards">
+            @for (lead of getLeadsByStage(stage); track lead._id) {
+              <div class="kanban-card">
+                <div class="kanban-card-top">
+                  <div class="company-avatar sm">{{ lead.companyName?.[0] }}</div>
+                  <div class="card-priority priority-{{ lead.priority | lowercase }}">{{ lead.priority }}</div>
+                </div>
+                <p class="card-company">{{ lead.companyName }}</p>
+                <p class="card-contact">{{ lead.contactPerson }}</p>
+                <p class="card-value">{{ formatCurrency(lead.dealValue) }}</p>
+                <div class="card-footer">
+                  <span class="card-source">{{ lead.source }}</span>
+                  <button class="icon-btn edit sm" (click)="openEdit(lead)">
+                    <span class="material-icons">edit</span>
+                  </button>
+                </div>
+              </div>
+            }
+            @if (!getLeadsByStage(stage).length) {
+              <div class="empty-column">
+                <span class="material-icons">inbox</span>
+                <p>No leads</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Lead Form Modal -->
+@if (showForm()) {
+  <app-lead-form [lead]="editingLead" (saved)="onFormSaved()" (cancelled)="closeForm()" />
+}
